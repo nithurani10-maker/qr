@@ -1,0 +1,30 @@
+services:
+  # Backend Service
+  - type: web
+    name: scam-deducer-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: PORT
+        value: 10000
+    autoDeploy: false
+
+  # Frontend Service (Static Site)
+  - type: static
+    name: scam-deducer-client
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: client/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: scam-deducer-backend
+          property: url
