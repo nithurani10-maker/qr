@@ -14,7 +14,7 @@ services:
         value: 10000
     autoDeploy: false
 
-  # Frontend Service (Converted to Web Service for Stability)
+  # Frontend Service
   - type: web
     name: scam-deducer-client
     env: node
@@ -28,7 +28,4 @@ services:
       - key: PORT
         value: 10000
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: scam-deducer-backend
-          property: url
+        value: https://scam-deducer-backend.onrender.com # Placeholder: Update after deploy
