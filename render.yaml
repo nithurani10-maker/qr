@@ -14,15 +14,19 @@ services:
         value: 10000
     autoDeploy: false
 
-  # Frontend Service
-  - type: static
+  # Frontend Service (Converted to Web Service for Stability)
+  - type: web
     name: scam-deducer-client
-    repo: https://github.com/nithurani10-maker/qr # Optional explicitly
+    env: node
+    region: singapore
+    plan: free
     buildCommand: cd client && npm install && npm run build
-    staticPublishPath: client/dist
+    startCommand: cd client && npx serve -s dist -l 10000
     envVars:
       - key: NODE_VERSION
         value: 18.17.0
+      - key: PORT
+        value: 10000
       - key: VITE_API_URL
         fromService:
           type: web
