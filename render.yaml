@@ -14,10 +14,10 @@ services:
         value: 10000
     autoDeploy: false
 
-  # Frontend Service (Static Site)
+  # Frontend Service
   - type: static
     name: scam-deducer-client
-    env: static
+    repo: https://github.com/nithurani10-maker/qr # Optional explicitly
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: client/dist
     envVars:
