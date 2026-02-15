@@ -14,8 +14,33 @@ import useAuth from './hooks/useAuth';
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
-    if (loading) return <div className="text-center text-white py-20">Loading...</div>;
-    if (!user) return <Navigate to="/login" replace />;
+
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--bg-primary)' }}>
+                <div style={{ width: '3rem', height: '3rem', border: '4px solid var(--border-subtle)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return children;
+};
+
+// Public Route Wrapper (Redirects to Dashboard if logged in)
+const PublicRoute = ({ children }) => {
+    const { user, loading } = useAuth();
+
+    if (loading) return null; // Or spinner
+
+    if (user) {
+        return <Navigate to="/dashboard" replace />;
+    }
+
     return children;
 };
 
@@ -25,17 +50,19 @@ function App() {
             <AuthProvider>
                 <Routes>
                     <Route path="/" element={<Layout />}>
-                        {/* Public Routes */}
-                        <Route index element={<Navigate to="/scan" replace />} />
-                        <Route path="login" element={<Login />} />
-                        <Route path="register" element={<Register />} />
+                        {/* Default Redirect */}
+                        <Route index element={<PublicRoute><Login /></PublicRoute>} />
 
-                        {/* Functionality Routes */}
-                        <Route path="scan" element={<ScanPage />} />
-                        <Route path="analyze" element={<AnalyzePage />} />
+                        {/* Auth Routes (Public but redirect if logged in) */}
+                        <Route path="login" element={<PublicRoute><Login /></PublicRoute>} />
+                        <Route path="register" element={<PublicRoute><Register /></PublicRoute>} />
+
+                        {/* Static Info (Public) */}
                         <Route path="security-info" element={<SecurityInfo />} />
 
-                        {/* Protected Routes */}
+                        {/* Functionality Routes (Protected) */}
+                        <Route path="scan" element={<ProtectedRoute><ScanPage /></ProtectedRoute>} />
+                        <Route path="analyze" element={<ProtectedRoute><AnalyzePage /></ProtectedRoute>} />
                         <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                         <Route path="history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                         <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

@@ -14,15 +14,10 @@ router.post('/analyze', protect, analyzeScan);
 // OR we just use a looser middleware manually in the controller.
 // But the prompt says "Attach to user" implying auth context.
 // Let's make a wrapper for optional auth.
-const optionalProtect = async (req, res, next) => {
-    if (req.headers.authorization) {
-        return protect(req, res, next);
-    }
-    next();
-};
+
 
 // Re-defining routes with correct middleware
-router.post('/analyze', optionalProtect, analyzeScan);
+router.post('/analyze', protect, analyzeScan);
 router.get('/history', protect, getScanHistory);
 router.get('/history/:id', protect, getScanById);
 

@@ -20,26 +20,30 @@ export const AuthProvider = ({ children }) => {
 
     const checkUser = async (storedToken) => {
         try {
-            // Decode purely to check expiry first
+            // 1. Decode locally to check expiry
             const decoded = jwtDecode(storedToken);
             if (decoded.exp * 1000 < Date.now()) {
+                console.log("Token expired locally");
                 logout();
                 return;
             }
 
-            // Set global header
+            // 2. Set global header
             axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-
-            // Allow app to render with token while we fetch full user details
             setToken(storedToken);
 
-            // Optionally fetch fresh user data
-            // const res = await axios.get(`${import.meta.env.VITE_API_URL}/auth/me`);
-            // setUser(res.data.data);
+            // 3. Verify with Backend (Critical)
+            try {
+                const res = await axios.get(`${import.meta.env.VITE_API_URL || 'https://scam-deducer-backend.onrender.com/api/v1'}/auth/me`);
+                setUser(res.data.data);
+            } catch (backendErr) {
+                console.error("Backend token verification failed", backendErr);
+                logout();
+                return;
+            }
 
-            // For speed, just use decoded for now or simple object
-            setUser({ id: decoded.id });
         } catch (err) {
+            console.error("Token decode failed", err);
             logout();
         } finally {
             setLoading(false);
@@ -47,7 +51,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const login = async (email, password) => {
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
+        const res = await axios.post(`${import.meta.env.VITE_API_URL || 'https://scam-deducer-backend.onrender.com/api/v1'}/auth/login`, {
             email,
             password
         });
@@ -57,14 +61,18 @@ export const AuthProvider = ({ children }) => {
         setToken(newToken);
         axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
 
-        const decoded = jwtDecode(newToken);
-        setUser({ id: decoded.id, ...res.data.user });
-
-        return res.data;
+        // Get user data immediately from response or fetch
+        if (res.data.user) {
+            setUser(res.data.user);
+        } else {
+            // Fallback decode if backend doesn't send user object
+            const decoded = jwtDecode(newToken);
+            setUser({ id: decoded.id });
+        }
     };
 
     const register = async (username, email, password) => {
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, {
+        const res = await axios.post(`${import.meta.env.VITE_API_URL || 'https://scam-deducer-backend.onrender.com/api/v1'}/auth/register`, {
             username,
             email,
             password
@@ -75,10 +83,12 @@ export const AuthProvider = ({ children }) => {
         setToken(newToken);
         axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
 
-        const decoded = jwtDecode(newToken);
-        setUser({ id: decoded.id, ...res.data.user });
-
-        return res.data;
+        if (res.data.user) {
+            setUser(res.data.user);
+        } else {
+            const decoded = jwtDecode(newToken);
+            setUser({ id: decoded.id });
+        }
     };
 
     const logout = () => {
@@ -86,6 +96,7 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
         setUser(null);
         delete axios.defaults.headers.common['Authorization'];
+        setLoading(false);
     };
 
     return (
