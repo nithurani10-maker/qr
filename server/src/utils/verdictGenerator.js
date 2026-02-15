@@ -2,29 +2,59 @@
  * Generates human-readable explanations based on risk score and flags.
  */
 exports.generateExplanation = (verdict, riskScore, availableData) => {
-    let explanation = "We analyzed this code finding: ";
-    const parts = [];
+    let summary = "";
+    let findings = [];
+    let riskFactors = [];
+    let recommendation = "";
 
+    // 1. Generate Summary & Findings
     if (availableData.type === 'UPI') {
-        parts.push(`a payment request for ${availableData.data.payeeName || 'an unknown payee'}`);
-        if (availableData.data.amount) parts.push(`amounting to ₹${availableData.data.amount}`);
+        const { payeeName, amount, vpa } = availableData.data || {};
+        summary = `This is a UPI payment request${amount ? ` for ₹${amount}` : ''}.`;
+
+        if (payeeName) findings.push(`Payee identified as "${payeeName}"`);
+        if (vpa) findings.push(`VPA Address: ${vpa}`);
+        if (amount) findings.push(`Amount is pre-filled to ₹${amount}`);
+
     } else if (availableData.type === 'URL') {
-        parts.push(`a link to ${availableData.data.domain}`);
+        const { domain, isIp } = availableData.data || {};
+        summary = `This is a web link pointing to ${domain}.`;
+
+        findings.push(`Destination: ${domain}`);
+        if (isIp) findings.push("Hostname is an IP address (uncommon for legitimate sites)");
+
     } else if (availableData.type === 'product') {
-        parts.push(`a product barcode (${availableData.data.format})`);
+        const { origin, format } = availableData.data || {};
+        summary = `This is a ${format} product barcode from ${origin}.`;
+        findings.push(`GS1 Origin: ${origin}`);
+
     } else {
-        parts.push("raw text content");
+        summary = "This is a standard text or raw data code.";
+        findings.push("Contains raw text data");
     }
 
-    explanation += parts.join(', ') + ". ";
-
+    // 2. Risk Factors based on Score/Verdict
     if (verdict === 'SAFE') {
-        explanation += "No known security threats were detected. The format is valid and the destination appears clean.";
+        riskFactors.push("No known threats detected");
+        recommendation = "You can proceed safely, but always stay alert.";
     } else if (verdict === 'SUSPICIOUS') {
-        explanation += `Caution is advised. We detected some irregularities (Risk Score: ${riskScore}/100). Verify the source before proceeding.`;
+        riskFactors.push("Unusual pattern detected");
+        if (availableData.type === 'URL') riskFactors.push("Domain has low reputation or suspicious structure");
+        if (availableData.type === 'UPI') riskFactors.push("Payee name may be missing or mismatched");
+        recommendation = "Verify the source carefully before proceeding. Do not enter sensitive info.";
     } else if (verdict === 'DANGER' || verdict === 'SCAM') {
-        explanation += `HIGH RISK WARNING. This content matches known scam patterns or blacklisted sources (Risk Score: ${riskScore}/100). DO NOT PROCEED.`;
+        riskFactors.push("Matches known scam pattern");
+        riskFactors.push("High risk score indicates Malicious Content");
+        recommendation = "DO NOT PROCEED. Close this link or cancel the payment immediately.";
     }
 
-    return explanation;
+    // 3. Fallback text
+    if (recommendation === "") recommendation = "Proceed with caution.";
+
+    return JSON.stringify({
+        summary,
+        findings,
+        riskFactors,
+        recommendation
+    });
 };

@@ -1,22 +1,21 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
-import Home from './pages/Home';
+import ScanPage from './pages/ScanPage';
+import AnalyzePage from './pages/AnalyzePage';
+import Dashboard from './pages/Dashboard';
+import HistoryPage from './pages/HistoryPage';
+import Profile from './pages/Profile';
+import SecurityInfo from './pages/SecurityInfo';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
 import useAuth from './hooks/useAuth';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
-
     if (loading) return <div className="text-center text-white py-20">Loading...</div>;
-
-    if (!user) {
-        return <Navigate to="/login" replace />;
-    }
-
+    if (!user) return <Navigate to="/login" replace />;
     return children;
 };
 
@@ -26,17 +25,20 @@ function App() {
             <AuthProvider>
                 <Routes>
                     <Route path="/" element={<Layout />}>
-                        <Route index element={<Home />} />
+                        {/* Public Routes */}
+                        <Route index element={<Navigate to="/scan" replace />} />
                         <Route path="login" element={<Login />} />
                         <Route path="register" element={<Register />} />
-                        <Route
-                            path="dashboard"
-                            element={
-                                <ProtectedRoute>
-                                    <Dashboard />
-                                </ProtectedRoute>
-                            }
-                        />
+
+                        {/* Functionality Routes */}
+                        <Route path="scan" element={<ScanPage />} />
+                        <Route path="analyze" element={<AnalyzePage />} />
+                        <Route path="security-info" element={<SecurityInfo />} />
+
+                        {/* Protected Routes */}
+                        <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                        <Route path="history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+                        <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                     </Route>
                 </Routes>
             </AuthProvider>

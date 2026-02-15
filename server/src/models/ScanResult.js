@@ -4,19 +4,19 @@ const ScanResultSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: false // Allow anonymous scans for now, or strict? Let's allow anonymous but encourage login.
+        required: false
     },
     payload: {
         type: String,
         required: true
     },
     decodedData: {
-        type: Object, // Stores parsed structure (UPI params, URL parts, etc)
+        type: Object,
         default: {}
     },
     verdict: {
         type: String,
-        enum: ['SAFE', 'SUSPICIOUS', 'SCAM', 'DANGER', 'UNKNOWN', 'WARN'], // Aligned with existing
+        enum: ['SAFE', 'SUSPICIOUS', 'SCAM', 'DANGER', 'UNKNOWN', 'WARN'],
         required: true
     },
     riskScore: {
@@ -34,8 +34,8 @@ const ScanResultSchema = new mongoose.Schema({
         type: String
     }],
     explanation: {
-        type: String, // Human readable summary
-        default: ''
+        type: String, // Stored as JSON string to handle structure
+        default: '{}'
     },
     metadata: {
         clientIp: String,
@@ -45,7 +45,7 @@ const ScanResultSchema = new mongoose.Schema({
     timestamp: {
         type: Date,
         default: Date.now,
-        index: true // For sorting history
+        index: true
     }
 });
 
