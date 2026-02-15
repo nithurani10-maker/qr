@@ -1,131 +1,191 @@
 import React, { useState } from 'react';
-import { humanizeVerdict } from '../utils/verdictHumanizer';
 
 const Verdict = ({ result, onRescan }) => {
-    const [showBreakdown, setShowBreakdown] = useState(false);
-    const [unlocked, setUnlocked] = useState(false);
+    const [activeTab, setActiveTab] = useState('summary'); // summary, details, raw
 
     if (!result) return null;
 
-    const { summary, description, action, actionColor, icon, signals } = humanizeVerdict(result);
     const isDanger = result.verdict === 'DANGER' || result.verdict === 'SCAM';
-    const isWarn = result.verdict === 'WARN' || result.verdict === 'SUSPICIOUS';
+    const isWarn = result.verdict === 'SUSPICIOUS' || result.verdict === 'WARN';
+    const isSafe = result.verdict === 'SAFE';
+
+    const getHeaderColor = () => {
+        if (isDanger) return 'bg-red-500/20 text-red-400 border-red-500/50';
+        if (isWarn) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
+        return 'bg-green-500/20 text-green-400 border-green-500/50';
+    };
+
+    const getIcon = () => {
+        if (isDanger) return '⛔';
+        if (isWarn) return '⚠️';
+        return '✅';
+    };
 
     return (
-        <div
-            className="w-full max-w-md bg-slate-800 rounded-xl p-6 shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-bottom-4 duration-500"
-            role="alert"
-            aria-live="assertive"
-        >
-            {/* Header / Summary */}
-            <div className="flex items-center gap-4 mb-4">
-                <div className="text-4xl" aria-hidden="true">{icon}</div>
-                <div>
-                    <h2 className="text-2xl font-bold text-white tracking-tight">{summary}</h2>
-                    <div className={`inline-block px-2 py-0.5 rounded text-xs font-bold mt-1 ${isDanger ? 'bg-red-500/20 text-red-400' :
-                            isWarn ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
-                        }`}>
-                        Risk Score: {result.riskScore}/100
+        <div className="w-full max-w-2xl bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+            {/* Header Verdict */}
+            <div className={`p-6 border-b ${getHeaderColor()} flex items-center justify-between`}>
+                <div className="flex items-center gap-4">
+                    <span className="text-5xl" role="img" aria-label={result.verdict}>{getIcon()}</span>
+                    <div>
+                        <h2 className="text-3xl font-black tracking-tight">{result.verdict}</h2>
+                        <p className="text-sm opacity-90 font-medium uppercase tracking-wider">
+                            Risk Score: {result.riskScore}/100
+                        </p>
                     </div>
                 </div>
-            </div>
-
-            {/* Human Readable Description */}
-            <p className="text-slate-300 mb-6 text-sm leading-relaxed border-l-2 border-slate-600 pl-3">
-                {description}
-            </p>
-
-            {/* Key Findings / Signals */}
-            {signals.length > 0 && (
-                <div className="mb-6 bg-slate-900/50 p-3 rounded-lg">
-                    <h3 className="text-slate-400 text-xs uppercase font-bold mb-2 tracking-wider">Why we say this:</h3>
-                    <ul className="space-y-1">
-                        {signals.map((signal, idx) => (
-                            <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
-                                <span className="text-slate-500 mt-0.5">•</span> {signal}
-                            </li>
-                        ))}
-                    </ul>
+                <div className="text-right hidden sm:block">
+                    <span className="text-xs uppercase opacity-70 block">Detected Type</span>
+                    <span className="font-bold text-lg">{result.detectedType}</span>
                 </div>
-            )}
-
-            {/* Primary Action / Advice */}
-            <div className={`p-4 rounded-lg mb-6 ${isDanger ? 'bg-red-900/20 border border-red-900/50' : 'bg-slate-700/30'}`}>
-                <strong className={`block text-sm uppercase mb-1 ${isDanger ? 'text-red-400' : 'text-slate-400'}`}>Recommended Action:</strong>
-                <span className="text-white font-medium text-lg">{action}</span>
             </div>
 
-            {/* Guardrails for Dangerous Content */}
-            {result.detectedType === 'URL' && (
-                <div className="mb-6">
-                    {isDanger && !unlocked ? (
-                        <div className="space-y-3">
+            {/* Navigation Tabs */}
+            <div className="flex border-b border-slate-700 bg-slate-900/50">
+                <button
+                    onClick={() => setActiveTab('summary')}
+                    className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'summary' ? 'bg-slate-800 text-blue-400 border-t-2 border-blue-400' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                    Analysis
+                </button>
+                <button
+                    onClick={() => setActiveTab('details')}
+                    className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'details' ? 'bg-slate-800 text-blue-400 border-t-2 border-blue-400' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                    Technical Data
+                </button>
+                <button
+                    onClick={() => setActiveTab('raw')}
+                    className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'raw' ? 'bg-slate-800 text-blue-400 border-t-2 border-blue-400' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                    Raw Payload
+                </button>
+            </div>
+
+            {/* Content Area */}
+            <div className="p-6 min-h-[200px]">
+
+                {/* SUMMARY TAB */}
+                {activeTab === 'summary' && (
+                    <div className="space-y-6 animate-in fade-in">
+                        <div className="bg-slate-900/50 p-4 rounded-lg border-l-4 border-slate-600">
+                            <h3 className="text-slate-400 text-xs uppercase font-bold mb-2">AI Explanation</h3>
+                            <p className="text-slate-200 text-lg leading-relaxed">
+                                {result.explanation}
+                            </p>
+                        </div>
+
+                        {result.riskBreakdown && Object.keys(result.riskBreakdown).length > 0 && (
+                            <div>
+                                <h3 className="text-slate-400 text-xs uppercase font-bold mb-3">Risk Factors</h3>
+                                <div className="space-y-2">
+                                    {Object.entries(result.riskBreakdown).map(([layer, data]) => (
+                                        data.riskContribution > 0 && (
+                                            <div key={layer} className="flex items-start gap-2 text-sm text-red-300 bg-red-900/10 p-2 rounded">
+                                                <span>•</span>
+                                                <span>{layer}: {data.findings ? data.findings.join(', ') : 'Issue Detected'}</span>
+                                            </div>
+                                        )
+                                    ))}
+                                    {result.riskScore === 0 && (
+                                        <p className="text-green-400 text-sm italic">No risk factors detected across 7 inspection layers.</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="pt-4">
+                            {result.detectedType === 'URL' && !isDanger && (
+                                <a
+                                    href={result.payload}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block w-full text-center py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg transition-transform active:scale-95"
+                                >
+                                    Open Link Safely
+                                </a>
+                            )}
+
+                            {isDanger && (
+                                <div className="text-center p-3 bg-red-900/20 text-red-200 rounded border border-red-900/50">
+                                    <strong className="block text-lg">⚠️ DO NOT PROCEED</strong>
+                                    <span className="text-xs">This content is flagged as malicious.</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* TECHNICAL DETAILS TAB */}
+                {activeTab === 'details' && (
+                    <div className="space-y-4 animate-in fade-in">
+                        {/* Parsed Fields */}
+                        {result.decodedData && Object.keys(result.decodedData).length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {Object.entries(result.decodedData).map(([key, value]) => (
+                                    <div key={key} className="bg-slate-900 p-3 rounded border border-slate-700">
+                                        <span className="text-xs text-slate-500 uppercase block mb-1">{key}</span>
+                                        <span className="text-white font-mono text-sm break-all">{typeof value === 'object' ? JSON.stringify(value) : value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-slate-500 italic">No structured data extracted.</p>
+                        )}
+
+                        {/* Flags */}
+                        {result.flags && result.flags.length > 0 && (
+                            <div className="mt-4">
+                                <h4 className="text-slate-400 text-xs uppercase font-bold mb-2">System Flags</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {result.flags.map((flag, idx) => (
+                                        <span key={idx} className="bg-slate-700 text-slate-300 px-2 py-1 rounded text-xs font-mono">
+                                            {flag}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-4 pt-4 border-t border-slate-700">
+                            <h4 className="text-slate-400 text-xs uppercase font-bold mb-2">Scan Meta</h4>
+                            <div className="text-xs text-slate-500 font-mono space-y-1">
+                                <p>ID: {result._id || 'N/A'}</p>
+                                <p>Timestamp: {new Date(result.timestamp).toISOString()}</p>
+                                <p>Engine Ver: v4.0.0</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* RAW PAYLOAD TAB */}
+                {activeTab === 'raw' && (
+                    <div className="animate-in fade-in">
+                        <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs text-slate-300 break-all whitespace-pre-wrap max-h-60 overflow-y-auto">
+                            {result.payload}
+                        </div>
+                        <div className="mt-2 text-right">
                             <button
-                                onClick={onRescan}
-                                className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold transition-colors shadow-lg"
-                                aria-label="Go back to safety"
+                                onClick={() => navigator.clipboard.writeText(result.payload)}
+                                className="text-xs text-blue-400 hover:text-blue-300"
                             >
-                                Back to Safety
-                            </button>
-                            <button
-                                onClick={() => setUnlocked(true)}
-                                className="w-full text-xs text-slate-500 hover:text-slate-400 underline decoration-slate-600 underline-offset-4"
-                            >
-                                I understand the risks, let me proceed
+                                Copy to Clipboard
                             </button>
                         </div>
-                    ) : (
-                        <a
-                            href={result.fingerprint ? '#' : result.payload} // In real app use actual payload
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`block w-full text-center py-3 rounded-lg font-bold text-white shadow-lg transition-transform active:scale-95 ${actionColor} ${isDanger ? 'opacity-75 hover:opacity-100' : ''}`}
-                            aria-label={`Open link: ${result.payload}`}
-                            onClick={(e) => {
-                                if (isDanger && !window.confirm("Are you ABSOLUTELY sure? This site is flagged as dangerous.")) {
-                                    e.preventDefault();
-                                }
-                            }}
-                        >
-                            Open Link {isDanger && '(Unsafe)'}
-                        </a>
-                    )}
-                </div>
-            )}
-
-            {/* Rescan / Toggle Details */}
-            <div className="flex gap-3 mt-4">
-                <button
-                    onClick={onRescan}
-                    className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg font-semibold transition-colors text-sm"
-                >
-                    Scan Another
-                </button>
-                <button
-                    onClick={() => setShowBreakdown(!showBreakdown)}
-                    className="px-4 py-3 bg-slate-700/50 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors text-sm font-medium"
-                    aria-label={showBreakdown ? "Hide details" : "Show technical details"}
-                >
-                    {showBreakdown ? 'Hide Debug' : 'Debug Info'}
-                </button>
+                    </div>
+                )}
             </div>
 
-            {/* Technical Breakdown (Hidden by default) */}
-            {showBreakdown && (
-                <div className="mt-6 pt-6 border-t border-slate-700/50 text-xs text-slate-400 font-mono animate-in fade-in slide-in-from-top-2">
-                    <p className="mb-2 text-slate-500 uppercase tracking-widest text-[10px]">Technical Intelligence</p>
-                    <div className="max-h-40 overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
-                        {Object.entries(result.riskBreakdown || {}).map(([layer, data]) => (
-                            <div key={layer} className="mb-2">
-                                <span className="text-blue-400 font-bold capitalize">{layer}:</span>{' '}
-                                <span className="text-slate-300">
-                                    {data.findings && data.findings.length > 0 ? data.findings.join(', ') : 'No flags'}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+            {/* Footer Actions */}
+            <div className="p-4 border-t border-slate-700 bg-slate-900/50 flex justify-center">
+                <button
+                    onClick={onRescan}
+                    className="px-8 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-bold transition-colors text-sm"
+                >
+                    Scan Another Code
+                </button>
+            </div>
         </div>
     );
 };

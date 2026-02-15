@@ -39,6 +39,7 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // Routes
+app.use('/api/v1/auth', require('./routes/authRoutes'));
 app.use('/api/v1/scan', require('./routes/scanRoutes'));
 
 // Health Check

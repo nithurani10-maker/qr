@@ -1,57 +1,52 @@
 const mongoose = require('mongoose');
 
-const scanResultSchema = new mongoose.Schema({
-    scanId: {
-        type: String,
-        required: true,
-        unique: true
+const ScanResultSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false // Allow anonymous scans for now, or strict? Let's allow anonymous but encourage login.
     },
-    rawData: {
+    payload: {
         type: String,
         required: true
     },
-    format: {
-        type: String,
-        default: 'QR_CODE'
+    decodedData: {
+        type: Object, // Stores parsed structure (UPI params, URL parts, etc)
+        default: {}
     },
     verdict: {
         type: String,
-        enum: ['SAFE', 'WARN', 'DANGER', 'SUSPICIOUS'],
+        enum: ['SAFE', 'SUSPICIOUS', 'SCAM', 'DANGER', 'UNKNOWN', 'WARN'], // Aligned with existing
         required: true
     },
     riskScore: {
         type: Number,
         min: 0,
         max: 100,
-        default: 0
+        required: true
     },
     detectedType: {
         type: String,
-        enum: ['URL', 'UPI', 'TEXT', 'PRODUCT', 'UNKNOWN'],
-        default: 'UNKNOWN'
+        enum: ['URL', 'UPI', 'TEXT', 'product', 'ISBN', 'vCard', 'WiFi', 'Geo', 'Unknown'],
+        required: true
     },
-    fingerprint: {
-        type: String,
-        index: true
-    },
-    layers: {
-        forensics: { type: Object, default: {} },
-        consistency: { type: Object, default: {} },
-        threat: { type: Object, default: {} },
-        behavior: { type: Object, default: {} },
-        intelligence: { type: Object, default: {} }
-    },
-    clientInfo: {
-        ipHash: String,
-        userAgent: String
-    },
-    findings: [{
+    flags: [{
         type: String
     }],
+    explanation: {
+        type: String, // Human readable summary
+        default: ''
+    },
+    metadata: {
+        clientIp: String,
+        userAgent: String,
+        geo: Object
+    },
     timestamp: {
         type: Date,
-        default: Date.now
+        default: Date.now,
+        index: true // For sorting history
     }
 });
 
-module.exports = mongoose.model('ScanResult', scanResultSchema);
+module.exports = mongoose.model('ScanResult', ScanResultSchema);
